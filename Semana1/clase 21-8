@@ -1,0 +1,13 @@
+Investigar sobre Pagos electrónicos
+Transbank / Webpay 
+Jueves 10 de septiembre, online. Exposición oral por equipo, 12 minutos + 3 de preguntas. Rúbrica en el repositorio del
+curso.
+Todos los temas siguen la misma pauta de cinco preguntas, para que las exposiciones sean comparables:
+1 ¿Qué problema resuelve? y por qué no se resuelve con un solo computador
+2 ¿Cuáles son sus nodos y su red? quién controla cada nodo, qué distancia recorren los mensajes
+3 ¿Cómo se comunican? protocolos, tipos de mensajes, síncrono o asíncrono
+4 ¿Qué falla y cómo se tolera? un incidente real documentado si existe
+5 ¿Qué transparencias ofrece y cuáles no? acceso, ubicación, replicación, concurrencia, fallos
+Entregables: diapositivas en el repositorio del equipo (carpeta docs/investigacion) antes de las 18:00 del 10-09, con al menos
+tres fuentes citadas, una de ellas de la bibliografía del programa. Un diagrama de nodos y mensajes hecho por el equipo, no
+copiado.
