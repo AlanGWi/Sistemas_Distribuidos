@@ -1,0 +1,50 @@
+\documentclass[12pt]{report}
+\def\TITULO{Título}
+\def\subtitulo{Subtítulo}
+\def\autora{Diego Leiva}
+\def\correoa{diegoroberto.leiva@gmail.com}
+\def\autorb{Alan Gimilio}
+\def\correob{alan.gimilio@alumnos.ulagos.cl}
+
+\def\guiaa{Carlos Jesus Rojas Latorre}
+
+\def\asignatura{Sistemas Distribuidos}
+\def\carrera{Ingeniería Civil en Informática}
+
+\input{Macros}
+\lstset{language=Python}
+
+\begin{document}
+	
+	%%%%%%%%%%%PORTADA%%%%%%%%%%%%%%%%%%%%%
+%\setlength{\unitlength}{1 cm} %Especificar unidad de trabajo
+\maketitle
+
+\cleardoublepage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+%INDICE GENERAL
+\tableofcontents
+%INDICE DE FIGURAS
+
+%INDICE DE TABLAS
+\renewcommand{\listtablename}{Índice de tablas}\listoftables
+%%%%%%%%%%%%%FIN PORTADA%%%%%%%%%%%%%%%%
+
+
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%%%%%%%%COMIENZO
+
+
+\input{Capitulo1}
+
+
+
+%%%%%REFERENCIAS
+
+
+\end{document}
