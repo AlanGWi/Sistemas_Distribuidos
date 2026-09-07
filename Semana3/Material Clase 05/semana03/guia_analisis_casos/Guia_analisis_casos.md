@@ -34,8 +34,8 @@ latencia? ¿Qué ocurre si cae el nodo de Santiago?
 <cluster | grid | cloud | edge | P2P | ubicuo>
 
 Justificación con las preguntas de la matriz (marcar la que más pesó):
-¿Quién manda? El origen es la autoridad final del contenido, pero cada nodo de borde (PoP) atiende las solicitudes de forma autónoma sin consultar al origen en cada petición — control descentralizado en la operación diaria, jerárquico en la autoridad del dato.
-¿Los nodos son parecidos? Los PoPs son homogéneos entre sí (misma función de caché), pero asimétricos respecto al origen, que es el único con la copia autoritativa. — Esta es la pregunta que más pesa para clasificarlo como edge: la asimetría origen/borde es la firma del modelo.
+¿Quién manda? El origen es la autoridad final del contenido, pero cada nodo de borde (PoP) atiende las solicitudes de forma autónoma sin consultar al origen en cada petición  control descentralizado en la operación diaria, jerárquico en la autoridad del dato.
+¿Los nodos son parecidos? Los PoPs son homogéneos entre sí , pero asimétricos respecto al origen, que es el único con la copia autoritativa. Esta es la pregunta que más pesa para clasificarlo como edge: la asimetría origen/borde es la firma del modelo.
 ¿Qué tan lejos están? Los nodos están deliberadamente cerca del usuario (ese es el objetivo de diseño), mientras el origen puede estar lejos.
 ¿Qué pasa si uno desaparece? El servicio sigue: DNS/anycast redirige al siguiente nodo más cercano, con algo más de latencia pero sin caída total.
 
@@ -46,6 +46,7 @@ Modelos secundarios presentes (si los hay) y por qué no dominan:
 | Nodo | Rol | ¿Cuántos? | ¿Estado o sin estado? |
 |---|---|---|---|
 | | | | |
+
 
 
 ## 3. Diagrama de interacciones
@@ -80,13 +81,16 @@ Falacia de la Semana 2 que se estaría asumiendo si no se cacheara: "la latencia
 ## 5. ¿Qué pasa si cae X?
 Elegir el nodo cuya caída más duele y describir:
 - Qué siguen viendo los usuarios:
+ El contenido sigue disponible; DNS/anycast redirige a otro PoP (por ejemplo, uno en Argentina o Brasil).
 - Qué deja de funcionar:
+La baja latencia local  el usuario en Chile ahora sirve desde más lejos
 - ¿El sistema elige responder (AP) o no equivocarse (CP)? ¿Cómo lo saben?
+
+El sistema elige AP (disponibilidad sobre consistencia): prefiere seguir respondiendo, aunque sea con más latencia o con contenido potencialmente desactualizado, antes que negarse a responder. Se sabe porque el sistema nunca "bloquea" la respuesta esperando confirmación de que tiene la versión más reciente
 
 ## 6. La desventaja que vamos a defender
 Una desventaja concreta del modelo elegido para este caso, con un ejemplo.
-(Es la respuesta que preparan para la pregunta cruzada.)
-```
+(Es la respuesta que preparan para la pregunta cruzada).
 
 ---
 
