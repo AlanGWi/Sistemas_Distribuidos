@@ -1,0 +1,1 @@
+Se guardaron las dos versiones del ppt mas un digrama de como seria en un ambiente mas comercial real ya que la version docker es una version simplificada 
