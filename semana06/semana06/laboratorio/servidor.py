@@ -24,7 +24,11 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [servidor] %(threadName)s %(message)s")
 
 # ----------------------------------------------------------------- estado compartido
-estado = {"inventario": {"manzana": 100, "pera": 100}, "operaciones": 0}
+estado = {
+    "cuentas": {"ana": 100000, "beto": 20000, "caja": 0},
+    "movimientos": [],          # (origen, destino, monto) en orden
+    "operaciones": 0,
+}
 lock = threading.Lock()
 
 
@@ -40,41 +44,97 @@ def seccion_critica():
     return SinLock() if SIN_LOCK else lock
 
 
+# ----------------------------------------------------------------- helpers
+def parsear_monto(txt):
+    """Devuelve el monto entero positivo o None si es inválido."""
+    if not txt.isdigit():
+        return None
+    monto = int(txt)
+    return monto if monto > 0 else None
+
+
 # ----------------------------------------------------------------- operaciones del dominio
-def op_listar(arg):
-    with seccion_critica():
-        items = " ".join(f"{k}:{v}" for k, v in sorted(estado["inventario"].items()))
-    return f"OK {items}"
-
-
-def op_agregar(arg):
+def op_saldo(arg):
     partes = arg.split()
-    if len(partes) != 2 or not partes[1].isdigit():
-        return "ERROR FORMATO AGREGAR <item> <cantidad>"
-    item, cant = partes[0].lower(), int(partes[1])
+    if len(partes) != 1:
+        return "ERROR FORMATO SALDO <cuenta>"
+    cuenta = partes[0].lower()
     with seccion_critica():
-        actual = estado["inventario"].get(item, 0)
+        if cuenta not in estado["cuentas"]:
+            return "ERROR CUENTA_NO_EXISTE"
+        saldo = estado["cuentas"][cuenta]
+    return f"OK {cuenta} {saldo}"
+
+
+def op_depositar(arg):
+    partes = arg.split()
+    if len(partes) != 2:
+        return "ERROR FORMATO DEPOSITAR <cuenta> <monto>"
+    cuenta, monto = partes[0].lower(), parsear_monto(partes[1])
+    if monto is None:
+        return "ERROR MONTO_INVALIDO"
+    with seccion_critica():
+        if cuenta not in estado["cuentas"]:
+            return "ERROR CUENTA_NO_EXISTE"
+        actual = estado["cuentas"][cuenta]
         time.sleep(0.001)                      # ventana para observar la carrera sin Lock
-        estado["inventario"][item] = actual + cant
-        nuevo = estado["inventario"][item]
-    return f"OK {item} {nuevo}"
+        estado["cuentas"][cuenta] = actual + monto
+        estado["movimientos"].append(("externo", cuenta, monto))
+        nuevo = estado["cuentas"][cuenta]
+    return f"OK {cuenta} {nuevo}"
 
 
-def op_quitar(arg):
+def op_retirar(arg):
     partes = arg.split()
-    if len(partes) != 2 or not partes[1].isdigit():
-        return "ERROR FORMATO QUITAR <item> <cantidad>"
-    item, cant = partes[0].lower(), int(partes[1])
+    if len(partes) != 2:
+        return "ERROR FORMATO RETIRAR <cuenta> <monto>"
+    cuenta, monto = partes[0].lower(), parsear_monto(partes[1])
+    if monto is None:
+        return "ERROR MONTO_INVALIDO"
     with seccion_critica():
-        actual = estado["inventario"].get(item)
-        if actual is None:
-            return "ERROR ITEM_NO_EXISTE"
-        if actual < cant:
-            return f"ERROR STOCK_INSUFICIENTE {actual}"
+        if cuenta not in estado["cuentas"]:
+            return "ERROR CUENTA_NO_EXISTE"
+        actual = estado["cuentas"][cuenta]
+        if actual < monto:
+            return f"ERROR SALDO_INSUFICIENTE {actual}"
         time.sleep(0.001)
-        estado["inventario"][item] = actual - cant
-        nuevo = estado["inventario"][item]
-    return f"OK {item} {nuevo}"
+        estado["cuentas"][cuenta] = actual - monto
+        estado["movimientos"].append((cuenta, "externo", monto))
+        nuevo = estado["cuentas"][cuenta]
+    return f"OK {cuenta} {nuevo}"
+
+
+def op_transferir(arg):
+    partes = arg.split()
+    if len(partes) != 3:
+        return "ERROR FORMATO TRANSFERIR <origen> <destino> <monto>"
+    origen, destino, monto = partes[0].lower(), partes[1].lower(), parsear_monto(partes[2])
+    if monto is None:
+        return "ERROR MONTO_INVALIDO"
+    if origen == destino:
+        return "ERROR MISMA_CUENTA"
+    with seccion_critica():
+        if origen not in estado["cuentas"] or destino not in estado["cuentas"]:
+            return "ERROR CUENTA_NO_EXISTE"
+        saldo_origen = estado["cuentas"][origen]
+        if saldo_origen < monto:
+            return f"ERROR SALDO_INSUFICIENTE {saldo_origen}"
+        saldo_destino = estado["cuentas"][destino]
+        time.sleep(0.001)
+        # descuento y suma dentro de la MISMA sección crítica
+        estado["cuentas"][origen] = saldo_origen - monto
+        estado["cuentas"][destino] = saldo_destino + monto
+        estado["movimientos"].append((origen, destino, monto))
+        n_origen = estado["cuentas"][origen]
+        n_destino = estado["cuentas"][destino]
+    return f"OK {origen} {n_origen} {destino} {n_destino}"
+
+
+def op_total(arg):
+    """Suma de todos los saldos (para la demo del invariante)."""
+    with seccion_critica():
+        total = sum(estado["cuentas"].values())
+    return f"OK TOTAL {total}"
 
 
 def op_espera(arg):
@@ -87,12 +147,13 @@ def op_espera(arg):
 
 
 OPERACIONES = {
-    "LISTAR": op_listar,
-    "AGREGAR": op_agregar,
-    "QUITAR": op_quitar,
+    "SALDO": op_saldo,
+    "DEPOSITAR": op_depositar,
+    "RETIRAR": op_retirar,
+    "TRANSFERIR": op_transferir,
+    "TOTAL": op_total,
     "ESPERA": op_espera,
 }
-
 
 def procesar(linea):
     """Devuelve (respuesta, seguir)."""
