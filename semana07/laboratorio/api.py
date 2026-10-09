@@ -1,19 +1,13 @@
-"""Puerta HTTP (API REST) delante del servidor TCP de la Semana 6.
+"""Puerta HTTP (API REST) delante del servidor TCP de la Semana 6. Dominio PAGOS.
 
 Cada peticion HTTP se TRADUCE a una linea del protocolo de texto, se envia
 al servidor TCP y la respuesta se traduce de vuelta a JSON y a un codigo HTTP.
 
-    GET  /items                  ->  LISTAR
-    GET  /items/{item}           ->  LISTAR (y se filtra)
-    POST /items/{item}/entradas  ->  AGREGAR <item> <cantidad>
-    POST /items/{item}/salidas   ->  QUITAR  <item> <cantidad>
-
-Plantilla del laboratorio, dominio de referencia INVENTARIO. Cada equipo
-reemplaza los recursos por los de su dominio y mantiene la estructura
-    pedir()     habla con el servidor TCP  (no se toca)
-    traducir()  convierte OK / ERROR en datos o en un codigo HTTP  (no se toca)
-    ERRORES     tabla codigo del protocolo -> codigo HTTP  (se adapta)
-    recursos    una funcion por operacion expuesta  (se adapta)
+    GET  /cuentas/{cuenta}             ->  SALDO <cuenta>
+    GET  /total                        ->  TOTAL
+    POST /cuentas/{cuenta}/depositos   ->  DEPOSITAR <cuenta> <monto>
+    POST /cuentas/{cuenta}/retiros     ->  RETIRAR   <cuenta> <monto>
+    POST /transferencias               ->  TRANSFERIR <origen> <destino> <monto>
 
 La API NO guarda nada. Todo el estado sigue viviendo en el servidor TCP.
 """
@@ -28,22 +22,31 @@ SERVIDOR_PUERTO = int(os.environ.get("SERVIDOR_PUERTO", "5000"))
 TIMEOUT_SERVIDOR = float(os.environ.get("TIMEOUT_SERVIDOR", "3"))
 REPLICA = os.environ.get("REPLICA", socket.gethostname())
 
-app = FastAPI(title="API de inventario", version="1.0",
+app = FastAPI(title="API de pagos", version="1.0",
               description="Puerta HTTP del servicio propio. Semana 7.")
 
-ITEM = Path(pattern=r"^[a-z0-9_]{1,30}$", description="nombre del item, sin espacios")
+NOMBRE = r"^[a-z0-9_]{1,30}$"
+CUENTA = Path(pattern=NOMBRE, description="nombre de la cuenta, sin espacios")
 
 # Codigo de error del protocolo de texto  ->  codigo de estado HTTP
 ERRORES = {
-    "ITEM_NO_EXISTE": 404,          # el recurso no existe
-    "STOCK_INSUFICIENTE": 409,      # la peticion es valida pero choca con el estado actual
+    "CUENTA_NO_EXISTE": 404,        # el recurso no existe
+    "SALDO_INSUFICIENTE": 409,      # peticion valida pero choca con el estado actual
+    "MISMA_CUENTA": 400,            # origen y destino iguales
+    "MONTO_INVALIDO": 400,
     "FORMATO": 400,                 # la peticion esta mal armada
     "COMANDO_DESCONOCIDO": 501,     # el servidor no implementa esa operacion
 }
 
 
-class Movimiento(BaseModel):
-    cantidad: int = Field(gt=0, description="unidades, entero mayor que cero")
+class Monto(BaseModel):
+    monto: int = Field(gt=0, description="entero mayor que cero")
+
+
+class Transferencia(BaseModel):
+    origen: str = Field(pattern=NOMBRE)
+    destino: str = Field(pattern=NOMBRE)
+    monto: int = Field(gt=0, description="entero mayor que cero")
 
 
 # ----------------------------------------------------------------- hablar con el nivel de datos
@@ -74,37 +77,39 @@ def traducir(respuesta: str) -> list[str]:
                         {"error": codigo, "detalle": " ".join(partes[2:]), "replica": REPLICA})
 
 
-def inventario() -> dict[str, int]:
-    pares = (p.split(":") for p in traducir(pedir("LISTAR")))
-    return {nombre: int(cantidad) for nombre, cantidad in pares}
-
-
 # ----------------------------------------------------------------- recursos
 @app.get("/salud")
 def salud():
     return {"estado": "ok", "replica": REPLICA}
 
 
-@app.get("/items")
-def listar_items():
-    return {"items": inventario(), "replica": REPLICA}
+@app.get("/cuentas/{cuenta}")
+def ver_cuenta(cuenta: str = CUENTA):
+    nombre, saldo = traducir(pedir(f"SALDO {cuenta}"))
+    return {"cuenta": nombre, "saldo": int(saldo), "replica": REPLICA}
 
 
-@app.get("/items/{item}")
-def ver_item(item: str = ITEM):
-    items = inventario()
-    if item not in items:
-        raise HTTPException(404, {"error": "ITEM_NO_EXISTE", "replica": REPLICA})
-    return {"item": item, "cantidad": items[item], "replica": REPLICA}
+@app.get("/total")
+def ver_total():
+    _, total = traducir(pedir("TOTAL"))
+    return {"total": int(total), "replica": REPLICA}
 
 
-@app.post("/items/{item}/entradas", status_code=201)
-def registrar_entrada(mov: Movimiento, item: str = ITEM):
-    nombre, total = traducir(pedir(f"AGREGAR {item} {mov.cantidad}"))
-    return {"item": nombre, "cantidad": int(total), "replica": REPLICA}
+@app.post("/cuentas/{cuenta}/depositos", status_code=201)
+def depositar(mov: Monto, cuenta: str = CUENTA):
+    nombre, saldo = traducir(pedir(f"DEPOSITAR {cuenta} {mov.monto}"))
+    return {"cuenta": nombre, "saldo": int(saldo), "replica": REPLICA}
 
 
-@app.post("/items/{item}/salidas", status_code=201)
-def registrar_salida(mov: Movimiento, item: str = ITEM):
-    nombre, total = traducir(pedir(f"QUITAR {item} {mov.cantidad}"))
-    return {"item": nombre, "cantidad": int(total), "replica": REPLICA}
+@app.post("/cuentas/{cuenta}/retiros", status_code=201)
+def retirar(mov: Monto, cuenta: str = CUENTA):
+    nombre, saldo = traducir(pedir(f"RETIRAR {cuenta} {mov.monto}"))
+    return {"cuenta": nombre, "saldo": int(saldo), "replica": REPLICA}
+
+
+@app.post("/transferencias", status_code=201)
+def transferir(t: Transferencia):
+    o, so, d, sd = traducir(pedir(f"TRANSFERIR {t.origen} {t.destino} {t.monto}"))
+    return {"origen": {"cuenta": o, "saldo": int(so)},
+            "destino": {"cuenta": d, "saldo": int(sd)},
+            "replica": REPLICA}
