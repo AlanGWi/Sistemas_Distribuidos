@@ -1,0 +1,40 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36" version="28.2.5">
+  <diagram name="despliegue_v1" id="v1">
+    <mxGraphModel dx="1336" dy="756" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="host" value="Computador anfitrión (notebook del equipo)  IP en el laboratorio: &lt;IP_NOTEBOOK&gt;" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=left;spacingLeft=10;fontStyle=1;arcSize=2;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="960" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="net" value="Red Docker  sd_net" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F1FB;strokeColor=#2F6DB5;dashed=1;verticalAlign=top;align=left;spacingLeft=10;fontStyle=1;arcSize=2;" parent="1" vertex="1">
+          <mxGeometry x="50" y="90" width="690" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="cliente" value="cliente  /  sd_cliente&#xa;cliente.py (interactivo)&#xa;sin estado compartido" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFFFFF;strokeColor=#2F6DB5;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="90" y="150" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="carga" value="carga  /  sd_carga&#xa;cliente_carga.py&#xa;(abre N conexiones a la vez)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFFFFF;strokeColor=#2F6DB5;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="90" y="430" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="servidor" value="servidor  /  sd_servidor&#xa;servidor.py&#xa;&#xa;ESTADO (en memoria):&#xa;cuentas, movimientos, operaciones&#xa;&#xa;Concurrencia: hilo por cliente&#xa;+ Lock (sección crítica)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF4D6;strokeColor=#B7791F;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="410" y="250" width="300" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="externo" value="Otro equipo / cliente externo&#xa;(otro notebook)&#xa;conecta a &lt;IP_NOTEBOOK&gt;:5000" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="1010" y="290" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="nota" value="Si cae un nodo:&#xa;• servidor: los clientes reciben conexión rechazada o cortada; el estado en memoria (saldos y movimientos) se pierde al reiniciar.&#xa;• cliente o carga: no afecta a los demás; el servidor registra la desconexión y sigue atendiendo.&#xa;• Puerto 5000 publicado: es la única entrada desde fuera del computador anfitrión." style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFFFFF;strokeColor=#999999;align=left;verticalAlign=top;spacingLeft=10;spacingTop=6;fontSize=12;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="50" y="640" width="1200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" value="TCP 5000" style="endArrow=classic;html=1;strokeWidth=2;fontSize=12;" parent="1" source="cliente" target="servidor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="TCP 5000" style="endArrow=classic;html=1;strokeWidth=2;fontSize=12;" parent="1" source="carga" target="servidor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="TCP 5000  (publicado 5000 -&gt; 5000)" style="endArrow=classic;html=1;strokeWidth=2;fontSize=12;" parent="1" source="externo" target="servidor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
