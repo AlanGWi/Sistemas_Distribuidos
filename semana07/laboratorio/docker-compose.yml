@@ -34,9 +34,18 @@ services:
     depends_on:
       - servidor
 
-  # Paso 4  copiar el bloque api1 completo aqui abajo y cambiar
-  #         api1 -> api2,  sd_api1 -> sd_api2,  REPLICA=api1 -> REPLICA=api2
-  #         y agregar "- api2" en el depends_on de nginx
+  api2:
+    build: .
+    container_name: sd_api2
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    environment:
+      - REPLICA=api2
+      - SERVIDOR_HOST=servidor
+      - SERVIDOR_PUERTO=5000
+    networks:
+      - sd_net
+    depends_on:
+      - servidor
 
   nginx:
     image: nginx:1.27-alpine
@@ -49,6 +58,7 @@ services:
       - sd_net
     depends_on:
       - api1
+      - api2
 
   cliente:
     build: .
