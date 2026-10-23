@@ -70,9 +70,10 @@ def codificar_bin(mensaje):
                 + _texto(mensaje.operacion)
                 + _lista(mensaje.argumentos))
     if isinstance(mensaje, Respuesta):
-        # TODO paso 2. Mismo patrón que la Solicitud, con este orden
-        #   id 4B | estado 1B (ESTADOS) | datos (1B cantidad + textos) | error (2B largo + texto)
-        raise NotImplementedError("codificar_bin(Respuesta) pendiente, paso 2")
+        # id 4B | estado 1B | datos (1B cantidad + textos) | error (2B largo + texto)
+        return (struct.pack("!IB", mensaje.id, ESTADOS[mensaje.estado])
+                + _lista(mensaje.datos)
+                + _texto(mensaje.error or ""))
     raise TypeError("mensaje desconocido")
 
 
@@ -83,9 +84,11 @@ def decodificar_bin(datos, clase):
         argumentos, pos = _leer_lista(datos, pos)
         return Solicitud(operacion=operacion, argumentos=argumentos, id=id_, version=version)
     if clase is Respuesta:
-        # TODO paso 2. Leer en el mismo orden en que se escribió. Pista,
-        # struct.unpack_from("!IB", datos, 0) entrega (id, estado) y ocupa 5 bytes.
-        raise NotImplementedError("decodificar_bin(Respuesta) pendiente, paso 2")
+        # id 4B | estado 1B | datos (1B cantidad + textos) | error (2B largo + texto)
+        id_, estado = struct.unpack_from("!IB", datos, 0)
+        datos_lista, pos = _leer_lista(datos, 5)   # 5 = 4B del id + 1B del estado
+        error, pos = _leer_texto(datos, pos)
+        return Respuesta(id=id_, estado=ESTADOS_INV[estado], datos=datos_lista, error=error)
     raise TypeError("clase desconocida")
 
 
