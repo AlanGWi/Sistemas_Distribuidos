@@ -192,8 +192,27 @@ powershell
 docker compose ps
 docker compose exec cliente python cliente_http.py --repetir 4 GET /cuentas/ana
 
+docker compose up -d --build --force-recreate  
+
 
 Volver a levantarla
 
 powershell
 docker compose start api1
+
+
+function c { docker compose exec cliente @args }
+c python cliente_http.py --repetir 4 POST /cuentas/ana/depositos monto=100
+c python cliente_http.py --repetir 4 POST /cuentas/ana/retiros monto=50
+c python cliente_http.py --repetir 4 POST /transferencias origen=ana destino=beto monto=30
+
+c python cliente_http.py --repetir 4 GET /cuentas/ana
+c python cliente_http.py --repetir 4 GET /total
+
+
+docker compose stop servidor
+docker compose kill servidor
+
+docker compose ps
+c python cliente_http.py --repetir 4 GET /cuentas/ana
+c python cliente_http.py --repetir 4 POST /cuentas/ana/depositos monto=100
