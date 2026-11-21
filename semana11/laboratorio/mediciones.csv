@@ -1,0 +1,2 @@
+mecanismo,operacion,n,p50_ms,p95_ms,media_ms,max_ms,respuesta_bytes
+grpc,saldo,200,0.65,0.73,0.66,1.06,9
